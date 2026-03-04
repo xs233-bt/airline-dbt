@@ -1,0 +1,117 @@
+import pymysql
+import paramiko
+import pandas as pd
+from sshtunnel import SSHTunnelForwarder
+import json
+import os
+import numpy as np
+from datetime import datetime, date
+import pyarrow as pa
+import pyarrow.parquet as pq
+from io import BytesIO
+import boto3
+
+def extract_and_upload_to_s3(table_name, date_column, s3_folder, start_date, end_date):
+    # Load config
+    config_file_path = r"C:\Users\dliu\Desktop\New Config.json"
+    with open(config_file_path, 'r') as f:
+        config = json.load(f)
+
+    ssh_host = config['ssh']['host']
+    ssh_user = config['ssh']['user']
+    ssh_password = config['ssh']['password']
+    ssh_port = 22
+    ssh_privateKey_path = r"C:\Users\dliu\Desktop\New GO-INFRAS.pem"
+
+    sql_hostname = config['sql']['hostname']
+    sql_password = config['sql']['password']
+    sql_main_database = config['sql']['main_database']
+    sql_username = config['sql']['username']
+    sql_port = config['sql']['port']
+
+    
+    from dotenv import load_dotenv
+
+    # Load from .env if available
+    load_dotenv()
+
+    aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
+    aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+    bucket_name = 'scoot-iceberg-bucket'
+
+    print(f"📡 Connecting to SSH: {ssh_host}")
+    with SSHTunnelForwarder(
+        (ssh_host, ssh_port),
+        ssh_username=ssh_user,
+        ssh_password=ssh_password,
+        ssh_pkey=ssh_privateKey_path,
+        remote_bind_address=(sql_hostname, sql_port)
+    ) as tunnel:
+
+        conn = pymysql.connect(
+            host='127.0.0.1',
+            user=sql_username,
+            passwd=sql_password,
+            db=sql_main_database,
+            port=tunnel.local_bind_port
+        )
+
+        if date_column:
+            query = f"""
+                SELECT *
+                FROM {table_name}
+                WHERE {date_column} BETWEEN '{start_date}' AND '{end_date}'
+            """
+        else:
+            query = f"SELECT * FROM {table_name}"
+
+        data = pd.read_sql_query(query, conn)
+        conn.close()
+
+    # Fix potential Arrow datetime conversion issues
+    data[data.select_dtypes(include=['object']).columns] = data.select_dtypes(include=['object']).astype(str)
+
+
+    table = pa.Table.from_pandas(data)
+    buffer = BytesIO()
+    pq.write_table(table, buffer)
+    buffer.seek(0)
+
+    today = datetime.today()
+    year_month = today.strftime('%Y-%m')
+    today_str = today.strftime('%Y-%m-%d')
+    s3_key = f"bronze/{s3_folder}/{year_month}/{s3_folder}_{today_str}.parquet"
+
+    s3_client = boto3.client(
+        's3',
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key
+    )
+
+    s3_client.upload_fileobj(buffer, bucket_name, s3_key)
+    print(f" Uploaded to s3://{bucket_name}/{s3_key}")
+
+if __name__ == "__main__":
+    tables_to_export = [
+        # {"table_name": "tbl_orders", "date_column": "order_date", "s3_folder": "orders"},
+        # {"table_name": "tbl_quotes", "date_column": "quote_date", "s3_folder": "quotes"},
+        # {"table_name": "tbl_invoices", "date_column": "invoice_date", "s3_folder": "invoices"},
+        # {"table_name": "tbl_customers", "date_column": None, "s3_folder": "customers"},
+        # {"table_name": "tbl_vendors", "date_column": None, "s3_folder": "vendors"},
+        # {"table_name": "scootaround_claims", "date_column": None, "s3_folder": "claims"}
+        # {"table_name": "scootaround_claim_equipments", "date_column": None, "s3_folder": "claim_equipments"},
+        # {"table_name": "scootaround_equipment_categories", "date_column": None, "s3_folder": "equipment_categories"},
+        {"table_name": "tbl_order_items", "date_column": None, "s3_folder": "order_items"}
+    ]
+
+    for tbl in tables_to_export:
+        try:
+            extract_and_upload_to_s3(
+                table_name=tbl["table_name"],
+                date_column=tbl["date_column"],
+                s3_folder=tbl["s3_folder"],
+                start_date="2025-06-01",
+                end_date="2025-06-30"
+            )
+        except Exception as e:
+            print(f"❌ Failed for {tbl['table_name']}: {e}")
