@@ -1,0 +1,16 @@
+version: 2
+
+sources:
+  - name: raw         # Reference this in dbt using source('raw', 'table_name')
+    schema: dbt_demo  # Athena database where the external tables exist
+    tables:
+      - name: raw_tbl_orders
+      - name: raw_tbl_quotes
+      - name: raw_tbl_invoices
+      - name: raw_tbl_customers
+      - name: raw_tbl_vendors
+      - name: raw_scootaround_claims
+      - name: raw_scootaround_claim_equipments
+      - name: raw_scootaround_equipment_categories
+      - name: raw_tbl_order_items
+      
