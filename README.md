@@ -51,9 +51,10 @@ Operational airline data is processed through the following pipeline:
 2. The data is transformed into **Parquet format** using Pandas and PyArrow.
 3. Raw datasets are stored in **Amazon S3 Bronze layer**.
 4. **DBT models** transform raw operational data into analytics-ready tables.
-5. **Apache Iceberg** manages the data lake tables.
-6. **AWS Athena** queries the curated datasets.
-7. **BI dashboards** consume the final analytics tables.
+5. **DBT `ref()` dependencies** are used to track model lineage and automatically manage upstream/downstream relationships.
+6. **Apache Iceberg** manages the data lake tables.
+7. **AWS Athena** queries the curated datasets.
+8. **BI dashboards** consume the final analytics tables.
 
 ---
 
