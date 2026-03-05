@@ -58,6 +58,17 @@ Operational airline data is processed through the following pipeline:
 
 ---
 
+## DBT Lineage and Dependency Management
+
+DBT manages model dependencies through `ref()` references, which automatically builds a directed acyclic graph (DAG) of transformations.
+
+This enables:
+
+- **Automatic lineage tracking** across transformation models
+- **Dependency-aware execution**, ensuring upstream models run before downstream models
+- **Reproducible data transformations** through version-controlled SQL models
+- **Improved maintainability**, allowing schema changes in upstream models to propagate safely to downstream tables
+
 # Data Model
 
 The warehouse organizes operational airline data into analytics-ready tables.
