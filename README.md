@@ -13,7 +13,8 @@ The resulting datasets support scalable analytics through **AWS Athena and BI da
 
 ## Architecture
 
-<img width="432" height="615" alt="{362EBA23-7761-4D9E-9588-38959C029A16}" src="https://github.com/user-attachments/assets/dd226188-c7e0-462f-b692-abf79a508f23" />
+<img width="513" height="770" alt="{5E891AC1-3ED7-4F35-985C-3FB3E6C9D2BB}" src="https://github.com/user-attachments/assets/1d9c89a5-2c47-4da6-a3c5-065b4fede147" />
+
 
 
 # Tech Stack
