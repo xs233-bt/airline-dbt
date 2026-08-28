@@ -19,11 +19,7 @@ SELECT
     o.order_amount,
     c.claim_quote_id,
     c.claim_claimcurrency_id,
-    CASE
-        WHEN v.vendor_country = 'USA' THEN 'USD'
-        WHEN v.vendor_country = 'Canada' THEN 'CAD'
-        ELSE 'USD'
-    END AS order_currency
+    {{ get_order_currency('v.vendor_country') }} AS order_currency
 FROM orders o
 LEFT  JOIN {{ source('raw', 'raw_scootaround_claims') }} c
     ON o.order_quote_id = c.claim_quote_id
