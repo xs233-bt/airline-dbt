@@ -3,7 +3,7 @@
     CASE
         WHEN {{ country_col }} = 'USA' THEN 'USD'
         WHEN {{ country_col }} = 'Canada' THEN 'CAD'
-        ELSE 'USD'
+        ELSE 'Unknown'
     END
 
 {% endmacro %}
