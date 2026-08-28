@@ -17,11 +17,7 @@ SELECT
     sbo.order_amount,
     sbo.customer_name,
     sbo.order_status,
-    CASE 
-        WHEN sbo.claim_claimcurrency_id = 1 THEN 'USD'
-        WHEN sbo.claim_claimcurrency_id = 2 THEN 'CAD'
-        ELSE 'Unknown'
-    END AS claim_currency,
+    {{ get_claim_currency('sbo.claim_claimcurrency_id') }} AS claim_currency,
     sbo.order_currency,
     ce.claim_equipment_names,
     soi.order_equipment_names,
